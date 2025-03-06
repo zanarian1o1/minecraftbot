@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Bot Controller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-weight: bold;
+            color: white;
+            z-index: 100;
+        }
+        #serverAddress {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            z-index: 100;
+        }
+        #connectBtn {
+            position: absolute;
+            top: 40px;
+            left: 200px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">Disconnected</div>
+    <input type="text" id="serverAddress" placeholder="Server Address">
+    <button id="connectBtn">Connect</button>
+
+    <script>
+        const { ipcRenderer } = require('electron')
+
+        // Get UI elements
+        const statusElement = document.getElementById('status')
+        const serverAddressInput = document.getElementById('serverAddress')
+        const connectBtn = document.getElementById('connectBtn')
+
+        // Handle connection
+        connectBtn.addEventListener('click', () => {
+            const serverAddress = serverAddressInput.value
+            ipcRenderer.send('connect', serverAddress)
+        })
+
+        // Update status
+        ipcRenderer.on('status', (event, status) => {
+            statusElement.textContent = status
+        })
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase()
+            console.log(key)
+            if (['w', 'a', 's', 'd', " "].includes(key)) {
+                ipcRenderer.send('move', key)
+            }
+        })
+
+        document.addEventListener('keyup', () => {
+            ipcRenderer.send('stop-move')
+        })
+
+        // Mouse controls
+        let mouseDown = false
+        let lastX = 0
+        let lastY = 0
+
+        document.addEventListener('mousedown', (e) => {
+            mouseDown = true
+            lastX = e.clientX
+            lastY = e.clientY
+        })
+
+        document.addEventListener('mouseup', () => {
+            mouseDown = false
+        })
+
+        document.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                const deltaX = e.clientX - lastX
+                const deltaY = e.clientY - lastY
+                ipcRenderer.send('look', { deltaX, deltaY })
+                lastX = e.clientX
+                lastY = e.clientY
+            }
+        })
+    </script>
+</body>
+</html>
